@@ -1,0 +1,275 @@
+function _init()
+	make_player()
+	make_zombie()
+	game_win=false
+	game_over=false
+	win=7
+	stopwatch = 0
+end
+
+function _update60()
+	if (not game_over) then
+		move_player()
+		move_zombie()
+		player_animate()
+		zombie_animate()
+		check_win_lose()
+		stopwatch += 1
+	else
+		if (btn(❎)) extcmd("reset")
+	end
+end
+
+function _draw()
+	cls()
+	if (not game_over) then
+		draw_map()
+		draw_player()
+		draw_zombie()
+	else
+		draw_win_lose()
+	end
+end
+--map
+function draw_map()
+	map_x=flr(p.x/16)*16
+ map_y=flr(p.y/16)*16
+ camera(-60+p.x,-60+p.y)
+ 
+
+ 
+ map(0,0,0,0,128,64)
+end
+
+function draw_player()
+	spr((p.sprite),p.x,p.y,1,1,p.flip)
+end
+
+function draw_zombie()
+	spr((z.sprite),z.x,z.y,1,1,z.flip)
+end
+
+function can_move(x,y,w,h)
+		
+ if (solid(x,y)) return false
+ 
+ if (solid(x+w,y)) return false
+ 
+ if (solid(x,y+h)) return false
+ 
+ if (solid(x+w,y+h)) return false
+
+	return true
+end
+
+function is_tile(tile_type,x,y)
+ tile=mget(x,y)
+ has_flag=fget(tile,tile_type)
+ return has_flag
+end
+
+--function check_win(x,y,w,h)
+--		
+-- if (win(x,y)) return false
+-- 
+-- if (win(x+w,y)) return false
+-- 
+-- if (win(x,y+h)) return false
+-- 
+-- if (win(x+w,y+h)) return false
+--
+--	return true
+--end
+
+
+function solid(x,y)
+
+ local map_x=flr(x/8)
+ local map_y=flr(y/8)
+ 
+ local map_sprite=mget(map_x,map_y)
+
+ local flag=fget(map_sprite)
+
+ return flag==1
+end
+
+
+
+--function win(x,y)
+--
+-- local map_x=flr(x/8)
+-- local map_y=flr(y/8)
+-- 
+-- local map_sprite=mget(map_x,map_y)
+--
+-- local flag=fget(map_sprite)
+--
+-- return flag==7
+--end
+--player functions
+--player functions
+
+function make_player()
+	p={}  
+	
+	p.hp=100
+	
+	p.x=24
+	p.y=60
+	
+	p.dx=0 
+	p.dy=0 
+	
+	p.w=7
+	p.h=7
+	
+	p.flip=false
+	 
+	p.anim=0
+	p.sprite=1 
+end
+
+function move_player()
+
+
+	if (btn(⬅️)) then
+	 p.dx-=1
+	 p.left=true
+	 p.flip=false
+ end
+	if (btn(➡️)) then 
+	p.dx+=1
+	p.left=true
+	p.flip=true
+	end
+	if (btn(⬆️)) then p.dy-=1 end
+	if (btn(⬇️)) then p.dy+=1 end
+	
+	if p.left
+	and not btn(⬅️)
+	and not btn(➡️)
+	then p.left=false
+end
+
+ if (can_move(p.x+p.dx,p.y,p.w,p.h)) then
+	 p.x+=p.dx
+ end
+ 
+ if (can_move(p.x,p.y+p.dy,p.w,p.h)) then
+		p.y+=p.dy
+	end
+	
+	p.dx,p.dy=0,0
+end
+
+
+
+function player_animate()
+	if p.left then
+	 if time()-p.anim>.1 then
+  	p.anim=time()
+  	p.sprite+=1
+  	if p.sprite>6 then
+   	p.sprite=3
+   end
+  end
+ else
+	 if time()-p.anim>.2 then
+  	p.anim=time()
+  	p.sprite+=1
+  	if p.sprite>2 then
+   	p.sprite=1 
+   end
+  end
+	end
+end
+		
+		--win/lose code
+
+function check_win_lose()
+ if (p.x == 156*6 and p.y == 60*6) then
+  game_win=true
+  game_over=true
+ elseif (p.x==z.x and p.y==z.y) then
+  game_win=false
+  game_over=true
+ end
+end
+
+function draw_win_lose()
+ camera()
+ if (game_win) then
+  print("★ you win! ★",37,64,7)
+  print("you took" .. stopwatch/30 ,47,72,7)
+ else
+  print("game over! :(",38,64,7)  
+ end
+ print("press ❎ to play again",20,80,5)
+end
+--enemy code
+
+function make_zombie()
+	z={}
+	
+	z.hp=50
+	z.attack=5  
+	
+	z.x=50*8
+	z.y=50*10
+	
+	z.dx=0 
+	z.dy=0 
+	
+	z.w=7
+	z.h=7
+	
+	z.flip=false
+
+	z.anim=0
+	z.sprite=48 
+end
+
+function move_zombie()
+
+	dx = z.x-p.x
+	if (dx<0) dx=dx*-1
+	dy = z.y-p.y
+	if (dy<0) dy=dy*-1
+	if dx>=dy then
+	 if (p.x<z.x) z.left=true z.flip=false z.dx-=0.5
+  if (p.x>z.x) z.left=true z.flip=true z.dx+=0.5
+ else
+  if (p.y<z.y) z.dy-=0.5
+  if (p.y>z.y) z.dy+=0.5
+ end
+
+
+	 z.x+=z.dx
+
+ 
+		z.y+=z.dy
+	
+
+	z.dx,z.dy=0,0
+end
+
+function zombie_animate()
+	if z.left then
+	 if time()-z.anim>.48 then
+  	z.anim=time()
+  	z.sprite+=1
+  	if z.sprite>53 then
+   	z.sprite=50
+   end
+  end
+ else
+	 if time()-z.anim>.51 then
+  	z.anim=time()
+  	z.sprite+=1
+  	if z.sprite>49 then
+   	z.sprite=48 
+   end
+  end
+	end
+end
